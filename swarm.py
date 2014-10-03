@@ -3,9 +3,8 @@ import random
 
 class Main(object):
     """Wrapper class performs optimization between particle objects"""
-    def __init__(self, num_particles, objective_function):
+    def __init__(self, num_particles):
         self.numParticles = numParticles
-        self.objective_function = objective_function
         self.swarm = [Particle()]*numParticles  
 
     def solve(self):
@@ -21,6 +20,8 @@ class Main(object):
         RETURNS(void)
         """
         pass
+
+
     def checkConvergence(self):
         """ counts difference between global_best and individual particle values below a given tolerance
             if count> threshold, convergence = true
@@ -30,26 +31,34 @@ class Main(object):
 
 class Particle(object):
     """Class for creating each of the particles, handles knowledge/optimization for single particle"""
-    def __init__(self):
+    def __init__(self, function):
         self.velocity = [0,0] # CHANGE: Set a random x and y velocity, with +/-  -> sends out particles in random direction
         self.position = [0,0]
+        self.function 
         self.functionValue = 0
-        self.previousPositions
+        self.previousPositions = {}
+        self.bestValue = 0
     
     def evaluateFunction(self):
         """evaluates the objective (cost) function for the particle's current position
             RETURNS (float) functionValue at current position
         """
-        pass
+        self.functionValue = self.function.evaluate(self.position[0], self.position[1])
+        return self.functionValue
+
     def compareToLocalBest(self):
         """compares the objective function value to individual particle's best known position
             If better, store position and functionValue as local best; if <=, do nothing
             RETURNS (void)
         """
-        pass
+        for key in self.previousPositions:
+            if self.previousPositions[key] > self.bestValue:
+                self.bestValue = self.previousPositions[key]
+
     def compareToGlobalBest(self):
         """ compares the objective function value to global best known position
-            If better, store position and functionValue as global best; if <= do nothing
+            If better, store position and functionValue as global best; if <= store self.bestValue
+            as global best
             RETURNS(void)
         """
         pass
@@ -65,10 +74,15 @@ class Particle(object):
         """
         pass
     def updatePosition(self):
-        """ calculates new position based on velocity and time step
+        """ calculates new position based on velocity and time step and updates previous position dictionary w/ new position
+            and function value
             RETURNS(void)
         """
-        pass
+
+        #For this update, a time-step of 1 is assumed ->Change Code if not true
+        self.position = [self.position[0] + self.velocity[0], self.position[1]+self.velocity[1]]
+        self.previousPositions[self.position] = self.evaluateFunction()
+
     def isFeasible(self):
         """ checks if new position is feasible, getRandomWeights, updateVelocity and updatePosition if not feasible
             RETURNS(boolean)
