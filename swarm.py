@@ -6,59 +6,74 @@ class Swarm(object):
     def __init__(self, num_particles, function):
         self.numParticles = numParticles
         self.function= function
-        self.swarm = [Particle(self.function)]*numParticles  
+        self.swarm = [Particle(self.function)]*numParticles 
         self.overBestVal= 0
         self.overBestPos= [0 0]
+        
     def solve(self):
         """
         Calls update() and checkConvergence() until checkConvergence is true
-        RETURNS(functionValue, position)
+        RETURNS(position, functionValue)
         """
-        pass
+        converged = False 
+        while(not converged)
+            self.update()
+            converged = self.checkConvergence()
+        return [self.overBestPos, self.overBestVal]
+
     def update(self):
         """
-        call Particle.compareLocalBest, then compare to global best. Set new global best if necessary
+        call Particle.compareToLocalBest, then compare to global best. Set new global best,
         Sets velocities of Particles in swarm, after one time step updates the position and evaluates the function,
-        evaluates the feasibility of the point, sets local best for each Particle, sets the global best position and function value
+        evaluates the feasibility of the point
         RETURNS(void)
         """
 
-        pass
+        for Particle in self.swarm: 
+            Particle.compareToLocalBest()
 
+        self.overBestVal= max(Self.overBestVal, max([Particle.bestXYZ[2] for Particle in self.swarm]))
+        tempPos= [particle.bestXYZ[0:2] for particle in self.swarm if particle.XYZ[2]==self.overBestVal]
+        if len(tempPos)>0:
+            self.overBestPos = tempPos[0] #In the case that multiple particles have the same max value, use position of 1st particle
+
+        for Particle in self.swarm:     
+            Particle.updateVelocity(self)
+            Particle.updatePosition()
+            Particle.evaluateFunction()
 
     def checkConvergence(self):
-        """ counts difference between global_best and individual particle values below a given tolerance
-            if count> threshold, convergence = true
+        """ Looks for all points converging (stdev) and/or the global maximum remain near constant for a certain period of time 
             RETURNS(boolean)
         """
-        pass
+        threshold = .05* self.overBestVal
+        return np.stdev([particle.bestXYZ[2] for particle in self.swarm]) <= threshold
 
 class Particle(object):
     """Class for creating each of the particles, handles knowledge/optimization for single particle"""
     def __init__(self, function, pInit, vInit):
-        self.position = [random.uniform(-10,10), random.uniform(-10,10)] # randrange gives 
-        self.velocity = [random.uniform(-1,1), random.uniform(-1,1)] # CHANGE: Set a random x and y velocity, with +/-  -> sends out particles in random direction
+        self.position = np.array([random.uniform(-10,10), random.uniform(-10,10)]) # randrange gives 
+        self.velocity = np.array([random.uniform(-1,1), random.uniform(-1,1)]) # CHANGE: Set a random x and y velocity, with +/-  -> sends out particles in random direction
         self.function = function
         self.functionValue = 0
-        self.bestPosition = [0,0]   # check (0,0) first as a possible solution point
-        self.bestFuncValue = self.evaluateFunction(0,0)    # calculates function value at (0,0)-- ensures that max is still captured even if max function value <0
-    
+        # self.bestPosition = [0,0]   # check (0,0) first as a possible solution point
+        # self.bestFuncValue = self.evaluateFunction(0,0)    # calculates function value at (0,0)-- ensures that max is still captured even if max function value <0
+        self.bestXYZ = np.array([0,0,self.evaluateFunction(0,0)]) #XYZ list where z is the function value and x and y are the particle's position coordinates
     def evaluateFunction(self):
         """evaluates the objective (cost) function for the particle's current position
-            RETURNS (float) functionValue at current position
+            RETURNS (void)
         """
         self.functionValue = self.function.evaluate(self.position[0], self.position[1])
-        return self.functionValue
-
+        
     def compareToLocalBest(self):
         """compares the objective function value to individual particle's best known position
             If better, store position and functionValue as local best; if <=, do nothing
             RETURNS (void)
         """
         newValue = self.function(self.position[0], self.position[1])
-        if newValue> self.bestFuncValue:
-            self.bestFuncValue = newValue
-            self.bestPosition= self.position
+        if newValue> self.bestXYZ[2]:
+            self.bestXYZ[2] = newValue
+            self.bestXYZ[0:2] = self.position
 
     def updateVelocity(self, glob):
         """ multiplies weights by best position vectors (local, global) to get new direction
@@ -76,7 +91,7 @@ class Particle(object):
 
         #multiplies weights with best vectors (glob is the Swarm object) and current velocity to get new velocity
         #function below comes from wikipedia.org/wiki/Particle_swarm_optimization
-        self.velocity= omega*self.velocity + psi_loc*randLocalWeight*self.bestPosition + psi_glob*randGlobalWeight*glob.overBestPos
+        self.velocity= omega*self.velocity + psi_loc*randLocalWeight*self.bestXYZ[0:2] + psi_glob*randGlobalWeight*glob.overBestPos
         
     def updatePosition(self):
         """ calculates new position based on velocity and time step and updates previous position dictionary w/ new position
