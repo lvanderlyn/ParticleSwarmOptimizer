@@ -1,14 +1,14 @@
 import numpy as np 
 import random 
 import matplotlib.pyplot as plt 
-
-
+import matplotlib.cm as cm
+mapping = cm.jet
 class Swarm(object):
     """Wrapper class performs optimization between particle objects"""
     def __init__(self, num_particles, function, disp = False):
         self.numParticles = num_particles
         self.function= function
-        self.swarm = [Particle(self.function)]*num_particles 
+        self.swarm = [Particle(self.function) for i in range(self.numParticles)] 
         self.overBestVal= -float('Inf')
         self.overBestPos= [0, 0]
         self.disp = disp
@@ -18,11 +18,13 @@ class Swarm(object):
         Calls update() and checkConvergence() until checkConvergence is true
         RETURNS(position, functionValue)
         """
+        iteration = 0
         converged = False 
-        # while not converged:
-        for i in range(4):
+        while not converged:
+        # for i in range(4):
             self.update()
-            converged = self.checkConvergence()
+            converged = self.checkConvergence(iteration)
+            iteration = iteration+1
         return [self.overBestPos, self.overBestVal]
 
     def update(self):
@@ -44,21 +46,22 @@ class Swarm(object):
         print(self.overBestVal)
         # print(self.overBestPos, self.overBestVal)
         # print("Current Position, Current Velocity, Current value")
-        for Particle in self.swarm:     
-            Particle.updateVelocity(self)
-            Particle.updatePosition()
-            Particle.evaluateFunction()
+        for index in range(len(self.swarm)):     
+            self.swarm[index].updateVelocity(self)
+            self.swarm[index].updatePosition()
+            self.swarm[index].evaluateFunction()
             if self.disp:
-                plt.plot(Particle.position[0], Particle.position[1], 'b*')
+                c = mapping(int(255/(index+1)))
+                plt.plot(self.swarm[index].position[0], self.swarm[index].position[1], '*', mfc = c, mec = c)
             # print(Particle.position, Particle.velocity[0], Particle.functionValue)
 
-    def checkConvergence(self):
+    def checkConvergence(self, iteration):
         """ Looks for all points converging (stdev) and/or the global maximum remain near constant for a certain period of time 
             RETURNS(boolean)
         """
         threshold = abs(0.01*self.overBestVal)
         stdev = np.std(np.array([particle.bestXYZ[2] for particle in self.swarm]))
-        return stdev <= threshold
+        return stdev <= threshold or iteration > 1000
 
 class Particle(object):
     """Class for creating each of the particles, handles knowledge/optimization for single particle"""
@@ -133,15 +136,15 @@ if __name__ == '__main__':
             #Current function comes from MATLAB Peaks function
             # return 3*(1-x)**2*np.exp(-(x**2)) - (y+1)**2 - 10 * (x/5 - x**3 - y**5) * np.exp(-(x**2) - (y**2)) - (1/3)*np.exp(-((x+1)**2) - y**2)
             return -np.power((x-3),2) - np.power(y, 2)-3
-    # N = 100
-    # x = np.linspace(-50.0, 50.0, N)
-    # y = np.linspace(-50.0, 50.0, N)
+    N = 100
+    x = np.linspace(-50.0, 50.0, N)
+    y = np.linspace(-50.0, 50.0, N)
 
-    # X, Y = np.meshgrid(x, y)
+    X, Y = np.meshgrid(x, y)
 
     function= my_function()
-    # z= function.evaluate(X,Y)
-    # cs = plt.contour(X, Y, z)
-    PSO = Swarm(5, function)
+    z= function.evaluate(X,Y)
+    cs = plt.contour(X, Y, z)
+    PSO = Swarm(3, function, True)
     PSO.solve()
-    # plt.show()
+    plt.show()
