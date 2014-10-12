@@ -145,7 +145,7 @@ if __name__ == '__main__':
             RETURNS: float of the result"""
 
             #Current function comes from MATLAB Peaks function
-            return 3*(np.power(1-x),2).dot(np.exp(-np.power(x,2))) - np.power((y+1),2) - 10 * (x/5 - np.power(x,3) - np.power(y,5)).dot(np.exp(-np.power(x,2) - np.power(y,2))) - (1/3)*np.exp(-np.power((x+1),2) - np.power(y,2))
+            return 3*(np.power((1-x),2)).dot(np.exp(-np.power(x,2))) - np.power((y+1),2) - 10 * (x/5 - np.power(x,3) - np.power(y,5)).dot(np.exp(-np.power(x,2) - np.power(y,2))) - (1/3)*np.exp(-np.power((x+1),2) - np.power(y,2))
             # return -np.power((x-50),2) - np.power(y, 2)-3
     N = 100
     x = np.linspace(-150.0, 150.0, N)
