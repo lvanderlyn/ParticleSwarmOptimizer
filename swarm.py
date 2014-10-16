@@ -54,9 +54,6 @@ class Swarm(object):
         # print(self.overBestPos, self.overBestVal)
         # print("Current Position, Current Velocity, Current value")
         for index in range(len(self.swarm)): 
-            z= function.evaluate(X,Y)
-            plt.hold(True)
-            cs = plt.contour(X, Y, z)
             if self.disp:
                 c = mapping(int(255/(index+1)))
                 plt.plot(self.swarm[index].position[0], self.swarm[index].position[1], '*', mfc = c, mec = c)    
@@ -77,7 +74,7 @@ class Swarm(object):
 class Particle(object):
     """Class for creating each of the particles, handles knowledge/optimization for single particle"""
     def __init__(self, function):
-        self.position = np.array([random.uniform(-120,120), random.uniform(-120,120)]) # randrange gives 
+        self.position = np.array([random.uniform(-10,10), random.uniform(-10,10)]) # randrange gives 
         self.velocity = np.array([random.uniform(-1,1), random.uniform(-1,1)]) # CHANGE: Set a random x and y velocity, with +/-  -> sends out particles in random direction
         self.function = function
         self.functionValue = 0
@@ -145,19 +142,22 @@ if __name__ == '__main__':
             RETURNS: float of the result"""
 
             #Current function comes from MATLAB Peaks function
-            return 3*(np.power((1-x),2)).dot(np.exp(-np.power(x,2))) - np.power((y+1),2) - 10 * (x/5 - np.power(x,3) - np.power(y,5)).dot(np.exp(-np.power(x,2) - np.power(y,2))) - (1/3)*np.exp(-np.power((x+1),2) - np.power(y,2))
+            # return np.multiply(3*np.power((1-x), 2), np.exp(-np.power(x,2) - np.power((y+1), 2))) - np.multiply(10 * (x/5.0 - np.power(x,3) - np.power(y,5)), np.exp(-np.power(x,2)-np.power(y,2)))#- np.exp(-np.power(x+1,2)-np.power(y,2))/3.0
             # return -np.power((x-50),2) - np.power(y, 2)-3
-    N = 100
-    x = np.linspace(-150.0, 150.0, N)
-    y = np.linspace(-150.0, 150.0, N)
+            return 5- (np.multiply(np.multiply(np.sin(x), np.sin(y)), np.power(x,2)) + np.power(y,2))
+    N = 500
+    x = np.linspace(-50.0, 50.0, N)
+    y = np.linspace(-50.0, 50.0, N)
     function= my_function()
-    X, Y = np.meshgrid(x, y)
-    Z = function.evaluate(X,Y)
-    # PSO = Swarm(15, function, True)
+    X, Y = np.meshgrid(x,y)
+    z= function.evaluate(X,Y)
+    plt.hold(True)
+    cs = plt.contour(X, Y, z)
+    # PSO = Swarm(25, function, True)
     # PSO.solve()
     fig = plt.figure()
     ax = fig.add_subplot(111,projection = '3d')
-    ax.plot_surface(X,Y,Z)
+    ax.plot_surface(X,Y,z)
     plt.show()
 
 
