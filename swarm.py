@@ -37,12 +37,13 @@ class Swarm(object):
         while not converged:
         # for i in range(4):
             self.update()
-            converged = self.checkConvergence(self.iteration)
+            isconverged = self.checkConvergence(self.iteration)
+            converged = isconverged[0] #set to boolean result
             self.iteration += 1
             if self.disp:
                 pylab.savefig('reest10_%d.jpg' %fileadd)  # If display is turned on, save figure for visualization
                 fileadd += 1
-        return [self.overBestPos, self.overBestVal]
+        return [self.overBestPos, self.overBestVal, isconverged[1]]
 
     def update(self):
         """
@@ -62,8 +63,7 @@ class Swarm(object):
             self.overBestPos = tempPos[0] #In the case that multiple particles have the same max value, use position of 1st particle
         print('Global Best value')
         print(self.overBestVal)
-        # print(self.overBestPos, self.overBestVal)
-        # print("Current Position, Current Velocity, Current value")
+
         for index in range(len(self.swarm)): 
             if self.disp:
                 c = mapping(int(255/(index+1)))
@@ -79,8 +79,6 @@ class Swarm(object):
             self.swarm[index].isFeasible()
             self.swarm[index].evaluateFunction()
 
-            # print(Particle.position, Particle.velocity[0], Particle.functionValue)
-
     def checkConvergence(self, iteration):
         """ Looks for all points converging (stdev) and/or the global maximum remain near constant for a certain period of time 
             RETURNS(boolean)
@@ -92,12 +90,15 @@ class Swarm(object):
         else:
             self.bestStreak=0
         if stdev<=threshold:
-            print('Converged. Stdev below threshold')
+            exitFlag = 0 #set this convergence pattern as exit flag 0
+            print('Converged: All points converged to same position')
         elif self.bestStreak>=50:
-            print('Converged. Best streak length greater than threshold')
+            exitFlag = 1 #set this convergence patter as exit flag 1
+            print('Converged: Points converged to single best value')
         elif iteration>=800:
-            print('Did not converge.')
-        return stdev <= threshold or self.bestStreak>=50 or iteration>=800
+            #sets no convergence as exit flag 2
+            print('Did not converge, exceeded iteration threshold')
+        return [stdev <= threshold or self.bestStreak>=50 or iteration>=800, exitFlag]
 
 class Particle(object):
     """Class for creating each of the particles, handles knowledge/optimization for single particle"""
@@ -134,10 +135,9 @@ class Particle(object):
         psi_loc= 0.30   # coefficient for influence of local best
         psi_glob= 0.30  # coefficient for influence of global best 
         #calculates random weights between 0 and 1 (non-inclusive) for influence of individual (local) or social (global) best
-        # use maximum() to ensure that random weight is greater than 0 (fullfils the non-inclusive requirement)
         randLocalWeight= .01*random.randrange(-100,100,1)
         randGlobalWeight= .01*random.randrange(-100,100,1)
-        #randVel= max(.01, random.random())
+        
         #multiplies weights with best vectors (glob is the Swarm object) and current velocity to get new velocity
         #function below comes from wikipedia.org/wiki/Particle_swarm_optimization
         self.velocity= (omega*self.velocity + psi_loc*(self.bestXYZ[0:2] - self.position)*randLocalWeight + psi_glob*(np.array(glob.overBestPos)-self.position)*randGlobalWeight)*latency
@@ -176,7 +176,7 @@ if __name__ == '__main__':
             """Takes in two variables, depending on way that the above is created, evaluates
             RETURNS: float of the result"""
 
-            #Current function comes from MATLAB Peaks function
+            #below function comes from MATLAB Peaks function
             # return np.multiply(3*np.power((1-x), 2), np.exp(-np.power(x,2) - np.power((y+1), 2))) - np.multiply(10 * (x/5.0 - np.power(x,3) - np.power(y,5)), np.exp(-np.power(x,2)-np.power(y,2)))#- np.exp(-np.power(x+1,2)-np.power(y,2))/3.0
             # return -np.power((x-50),2) - np.power(y, 2)-3
             return 5- (np.multiply(np.multiply(np.sin(x), np.sin(y)), np.power(x,2)) + np.power(y,2))
