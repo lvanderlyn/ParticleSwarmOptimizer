@@ -3,6 +3,8 @@ import random
 import matplotlib.pyplot as plt 
 import matplotlib.cm as cm
 import pylab 
+import scipy.optimize as sp
+import time
 from mpl_toolkits.mplot3d import Axes3D
 mapping = cm.jet
 class Swarm(object):
@@ -32,16 +34,22 @@ class Swarm(object):
         RETURNS(position, functionValue)
         """
         converged = False
-        plt.hold(True)
+        N = 500
+        x = np.linspace(-100.0, 100.0, N)
+        y = np.linspace(-100.0, 100.0, N)
+        X, Y = np.meshgrid(x,y)
+        Z = function.evaluate(X,Y)
         fileadd = 0;
         while not converged:
-        # for i in range(4):
+            plt.hold(False)
+            plt.contour(X, Y, Z)
+            plt.show()
             self.update()
             isconverged = self.checkConvergence(self.iteration)
             converged = isconverged[0] #set to boolean result
             self.iteration += 1
             if self.disp:
-                pylab.savefig('reest10_%d.jpg' %fileadd)  # If display is turned on, save figure for visualization
+                pylab.savefig('single_plot_%s.jpg' %('0'*(3-len(str(fileadd))) + str(fileadd)))  # If display is turned on, save figure for visualization
                 fileadd += 1
         return [self.overBestPos, self.overBestVal, isconverged[1]]
 
@@ -66,6 +74,7 @@ class Swarm(object):
 
         for index in range(len(self.swarm)): 
             if self.disp:
+                plt.hold(True)
                 c = mapping(int(255/(index+1)))
                 plt.plot(self.swarm[index].position[0], self.swarm[index].position[1], '*', mfc = c, mec = c)    
             self.swarm[index].updateVelocity(self, self.latency) #multiplies velocity by #time-steps until update
@@ -91,19 +100,22 @@ class Swarm(object):
             self.bestStreak=0
         if stdev<=threshold:
             exitFlag = 0 #set this convergence pattern as exit flag 0
-            print('Converged: All points converged to same position')
+            print('Converged: All points converged to same position; std was less than threshold')
         elif self.bestStreak>=50:
             exitFlag = 1 #set this convergence patter as exit flag 1
-            print('Converged: Points converged to single best value')
+            print('Converged: Best value did not increase %d times in a row' %50)
         elif iteration>=800:
-            #sets no convergence as exit flag 2
+            exitFlag = 2 #sets no convergence as exit flag 2
             print('Did not converge, exceeded iteration threshold')
+        else:
+            exitFlag = None
         return [stdev <= threshold or self.bestStreak>=50 or iteration>=800, exitFlag]
 
 class Particle(object):
     """Class for creating each of the particles, handles knowledge/optimization for single particle"""
     def __init__(self, function):
         self.position = np.array([random.uniform(-50,50), random.uniform(-50,50)]) 
+        self.firstPosition = self.position #so we can set gradient descent to start at every initial point
         self.velocity = np.array([random.uniform(-1,1), random.uniform(-1,1)]) 
         self.function = function
         self.functionValue = 0      
@@ -180,19 +192,29 @@ if __name__ == '__main__':
             # return np.multiply(3*np.power((1-x), 2), np.exp(-np.power(x,2) - np.power((y+1), 2))) - np.multiply(10 * (x/5.0 - np.power(x,3) - np.power(y,5)), np.exp(-np.power(x,2)-np.power(y,2)))#- np.exp(-np.power(x+1,2)-np.power(y,2))/3.0
             # return -np.power((x-50),2) - np.power(y, 2)-3
             return 5- (np.multiply(np.multiply(np.sin(x), np.sin(y)), np.power(x,2)) + np.power(y,2))
-    N = 10000
-    x = np.linspace(-100.0, 100.0, N)
-    y = np.linspace(-100.0, 100.0, N)
+
+        def compareEvaluate(self, x):
+            """
+                Function for scipy.optimize.cg_gradient -> negative function b/c this is a minimization algorithm
+                includes the constraints
+            """
+            if abs(x[0]) <= self.scale and abs(x[1]) <= self.scale:
+                y = x[1]
+                x = x[0]
+                return (np.multiply(np.multiply(np.sin(x), np.sin(y)), np.power(x,2)) + np.power(y,2)) - 5 #if x,y are feasible -> solve normally
+            else:
+                return 20000 # set high to invalidate any answers where x and y are outside our feasible region
+if __name__ == '__main__':
+    startTime = time.time()
     function= my_function(100)
-    X, Y = np.meshgrid(x,y)
-    z = function.evaluate(X,Y)
-    # plt.contour(X, Y, z)
-    # PSO = Swarm(25, function, disp = True, latency = 1, reset = 12)
-    # PSO.solve()
-    print np.amax(z)
+    PSO = Swarm(25, function, disp = True, latency = 1, reset = 15)
+    PSO.solve()
+    for particle in PSO.swarm:
+        print(sp.fmin_cg(function.compareEvaluate, particle.firstPosition))
+    # print np.amax(z)
     # fig = plt.figure()
     # ax = fig.add_subplot(111,projection = '3d')
     # ax.plot_surface(X,Y,z)
     # plt.show()
-
+    print(time.time()-startTime)
 
